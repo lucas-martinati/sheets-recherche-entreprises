@@ -1,61 +1,115 @@
-# 🚗 Sheets Temps de Trajet
+# 🔍 Recherche d'entreprises IT — Google Sheets
 
-Extension **Google Apps Script** pour Google Sheets qui calcule automatiquement les
-**temps de trajet** entre une adresse de départ et une liste d'adresses, directement
-dans une feuille de calcul. Pratique pour comparer des logements, des offres d'emploi,
-des lieux de rendez-vous, etc.
+Extension **Google Apps Script** pour Google Sheets qui t'aide à la fois à
+**suivre tes prospects / contacts entreprises** et à **calculer les temps de
+trajet** (domicile → lieu d'entretien, adresse de travail) dans le cadre de ta
+**recherche d'entreprise dans le secteur de l'informatique**.
 
-Le calcul tourne **en arrière-plan** : on peut fermer la fenêtre, il continue tout seul.
+Idéal pour préparer une candidature : repérer les entreprises qui ne répondent
+pas, et jauger rapidement l'acheminement avant de postuler.
 
 ## ✨ Fonctionnalités
 
-- Menu personnalisé dans Google Sheets (**🚗 Outils Candidatures**).
-- Choix du **point de départ** parmi une liste d'adresses enregistrées.
-- Choix du **mode de transport** : 🚗 voiture · 🚶 à pied · 🚲 vélo · 🚆 train · 🚌 bus ·
-  🚌🚲 **Bus 603 (Piennes) + Vélo**.
-- Choix libre des **colonnes** utilisées (colonne de l'adresse, colonne du résultat).
-- **Traitement en arrière-plan** via un déclencheur temporel : la fermeture de la
-  fenêtre n'interrompt pas le calcul ; on peut rouvrir le menu pour revoir la progression.
-- Barre de progression, journal des dernières lignes traitées, et bouton **Arrêter**.
-- Gestion propre des erreurs Google Maps (quota journalier, limite momentanée,
-  clé invalide, adresse introuvable…).
+### 🔍 Suivi auto des contacts entreprises — [`SuiviAuto.gs`](./SuiviAuto.gs)
+
+- **« Contacts Entreprises »** : ton suivi humain — statut, établissement
+  d'accueil, nom/prénom du tuteur, adresse, ID…
+- **« Suivi Contacts »** : la trace automatique — entreprise contactée, n° de
+  l'offre, personne contactée, date du contact, réponse, commentaires, clé
+  technique.
+- Déclencheur **installable** (`onEdit`) : dès qu'une ligne passe au statut
+  « En attente » / « Réponse positive » / « Réponse négative », une ligne
+  correspondante est **créée — ou mise à jour —** dans le suivi.
+- **ID unique** (UUID) par entreprise, créé une seule fois puis conservé, avec
+  migration automatique depuis les anciennes clés.
+- Nettoyage des doublons.
+
+### 🚗 Calculateur de temps de trajet — [`CalculTempsTrajet.gs`](./CalculTempsTrajet.gs)
+
+- Menu personnalisé **🚗 Outils Candidatures**.
+- Choix du point de départ, du mode de transport (voiture, à pied, vélo, train,
+  bus, **Bus 603 + Vélo**), et des colonnes adresse / résultat.
+- Calcul **en arrière-plan** : barre de progression, journal des dernières lignes
+  traitées, bouton **Arrêter**.
+
+## 📁 Structure du dépôt
+
+| Fichier | Rôle |
+|---|---|
+| [`SuiviAuto.gs`](./SuiviAuto.gs) | Suivi automatique des contacts entreprises : en-têtes, déclencheur, migrations, doublons. |
+| [`CalculTempsTrajet.gs`](./CalculTempsTrajet.gs) | Calculateur de temps de trajet : menu, dialogue, appel API Google Maps, fenêtre. |
+| [`appsscript.json`](./appsscript.json) | Paramètres du projet Apps Script (fuseau, runtime V8). |
 
 ## 🔧 Installation
 
-1. Ouvrir le Google Sheet cible → menu **Extensions → Apps Script**.
-2. Coller le contenu de [`Code.gs`](./Code.gs) dans l'éditeur, puis **Enregistrer**.
-3. Recharger le Google Sheet : un menu **🚗 Outils Candidatures** apparaît.
+### 1. Ouvrir le Google Sheet
+**Extensions → Apps Script**.
 
-## 🔑 Configuration de la clé API Google Maps (obligatoire)
+### 2. Installer le suivi des contacts (`SuiviAuto.gs`)
 
-Le script utilise la **Directions API** avec **ta propre clé** (quota personnel, et non
-le quota partagé quasi nul du service Maps intégré à Apps Script).
+1. Coller le contenu de [`SuiviAuto.gs`](./SuiviAuto.gs) dans l'éditeur, puis
+   **Enregistrer**.
+2. Exécuter **`installerSuivi`** une fois : crée l'onglet **Suivi Contacts**
+   (en-têtes + colonnes masquées) et installe le déclencheur `onEdit` sur
+   **Contacts Entreprises**.
+3. Si tu migres depuis une ancienne version : exécuter **`migrerVersUuid`** puis
+   **`nettoyerDoublons`**.
+
+### 3. Installer le calculateur de temps de trajet (`CalculTempsTrajet.gs`)
+
+1. Coller le contenu de [`CalculTempsTrajet.gs`](./CalculTempsTrajet.gs) dans
+   l'éditeur, puis **Enregistrer**.
+2. Recharger le Sheet : le menu **🚗 Outils Candidatures** apparaît.
+3. **🔑 Configurer la clé API Google Maps** (voir section dédiée).
+
+### 4. Mettre à jour les onglets
+
+- Le script `SuiviAuto.gs` travaille avec les onglets **« Contacts Entreprises »**
+  et **« Suivi Contacts »**.
+- Le script `CalculTempsTrajet.gs` crée automatiquement l'onglet **« Adresses de
+  départ »** si besoin.
+
+## 🧩 Configuration (bloc « À ADAPTER »)
+
+Chaque script comporte un bloc commenté `// ====== À ADAPTER` en tête :
+- noms exacts des en-têtes (accents / majuscules ignorés) ;
+- valeurs des listes déroulantes ;
+- valeurs écrites dans le suivi.
+
+À adapter selon ton Sheet réel — les noms d'onglets doivent, eux, correspondre
+exactement.
+
+## 🔑 Configuration de la clé API Google Maps (obligatoire pour le calculateur)
+
+Le script `CalculTempsTrajet.gs` utilise la **Directions API** avec **ta propre
+clé** (quota personnel, et non le quota partagé quasi nul du service Maps
+intégré à Apps Script).
 
 1. Aller sur [console.cloud.google.com](https://console.cloud.google.com) → créer/choisir un projet.
 2. **APIs & Services → Bibliothèque** → activer **« Directions API »**.
 3. **Facturation** : associer une carte.
-   ⚠️ Obligatoire, mais Google offre **200 $ de crédit gratuit/mois** (~40 000 trajets) —
-   aucun débit en usage normal.
+   ⚠️ Obligatoire, mais Google offre **200 $ de crédit gratuit/mois** (~40 000
+   trajets) — aucun débit en usage normal.
 4. **APIs & Services → Identifiants → Créer des identifiants → Clé API**.
 5. (Recommandé) Restreindre la clé à la **Directions API**.
 6. Dans le Sheet : menu **🚗 Outils Candidatures → 🔑 Configurer la clé API**, coller la clé.
 
-La clé est stockée dans les *Script Properties* du projet — **jamais** en dur dans le code
-ni visible dans la feuille.
+La clé est stockée dans les *Script Properties* du projet — **jamais** en dur dans
+le code ni visible dans la feuille.
 
 ## 🔄 Développement avec clasp (optionnel)
 
 [`clasp`](https://github.com/google/clasp) permet de synchroniser ce dépôt avec le
-projet Apps Script en ligne, au lieu de copier-coller `Code.gs` à la main. Les
-fichiers `.clasp.json` et `.clasprc.json` sont ignorés par git (voir `.gitignore`) :
-si tu les perds ou clones le dépôt sur une nouvelle machine, voici comment tout
-remettre en place.
+projet Apps Script en ligne, au lieu de copier-coller les fichiers à la main. Les
+fichiers `.clasp.json` et `.clasprc.json` sont ignorés par git (voir
+`.gitignore`) : si tu les perds ou clones le dépôt sur une nouvelle machine, voici
+comment tout remettre en place.
 
 1. **Installer clasp** (une fois par machine) :
    ```bash
    npm install -g @google/clasp
    ```
-2. **Se connecter à son compte Google** :
+2. **Se connecter à ton compte Google** :
    ```bash
    clasp login
    ```
@@ -69,58 +123,37 @@ remettre en place.
      ```
      Ça crée `.clasp.json` (référence vers le projet) et récupère `appsscript.json`.
 4. **Synchroniser** :
-   - `clasp push` : envoie `Code.gs` local vers l'éditeur en ligne.
+   - `clasp push` : envoie `SuiviAuto.gs` + `CalculTempsTrajet.gs` locaux vers
+     l'éditeur en ligne.
    - `clasp pull` : récupère les changements faits en ligne vers le local.
 
 ## 📋 Utilisation
 
-1. Préparer l'onglet cible avec au moins une colonne d'**adresses de destination**
-   et une colonne (vide) qui recevra le **résultat**.
-2. Menu **🚗 Outils Candidatures → Calculer les temps de trajet**.
-3. Dans la fenêtre : choisir le point de départ, le mode de transport, la colonne
+### Suivi des entreprises
+
+1. Renseigner les lignes dans **Contacts Entreprises** (statut, entreprise,
+   tuteur, adresse…).
+2. Passer le statut (via liste déroulante ou texte) → le script met à jour
+   automatiquement **Suivi Contacts**.
+3. Consulter les réponses dans le suivi ; lancer un nouveau contact si besoin.
+
+### Calcul des temps de trajet
+
+1. Menu **🚗 Outils Candidatures → Calculer les temps de trajet**.
+2. Dans la fenêtre : choisir le point de départ, le mode de transport, la colonne
    de l'adresse et la colonne du résultat, puis **Lancer le calcul**.
-4. La progression s'affiche. On peut fermer la fenêtre : le calcul continue.
+3. La progression s'affiche. On peut fermer la fenêtre : le calcul continue.
 
-Le premier onglet **« Adresses de départ »** est créé automatiquement au premier
-lancement : y renseigner les points de départ possibles (nom + adresse exacte).
+## 🗂️ Fonctionnement technique
 
-### Notes
-
-- Seules les lignes dont la colonne résultat est **vide** ou contient
-  « Erreur » / « Introuvable » / « Hors » sont (re)calculées. Pour recalculer, vider la cellule
-  ou utiliser une autre colonne de résultat (ex. une pour la voiture, une pour le train).
-- Les modes **train / bus** dépendent des horaires réels : une adresse sans desserte
-  peut renvoyer « Introuvable » même si l'adresse est correcte.
-- Le mode **🚌🚲 Bus 603 (Piennes) + Vélo** part toujours de Piennes via la ligne
-  transfrontalière RGTR 603 (Piennes → Landres → Audun-le-Roman → Aumetz →
-  Audun-le-Tiche → Esch-sur-Alzette → Luxembourg), quel que soit le point de départ
-  sélectionné dans la fenêtre. Il ne s'applique **qu'aux adresses situées au
-  Luxembourg** (détection sur la présence de « Luxembourg » ou d'un code postal du
-  type « L-1234 » dans l'adresse) ; les adresses hors Luxembourg sont ignorées
-  (cellule laissée vide, sans note) et peuvent donc être calculées avec un autre
-  mode dans une autre colonne. Pour chaque adresse
-  au Luxembourg, le script teste une douzaine d'arrêts représentatifs de la ligne,
-  calcule le temps de vélo restant jusqu'à la destination pour chacun (via la
-  Directions API en mode vélo), et retient l'arrêt qui minimise ce trajet à vélo —
-  c'est-à-dire qu'on va « le plus loin possible » en bus avant de finir à vélo. Le
-  temps de bus est une **moyenne fixe** tirée des horaires officiels de mai 2026 (ne
-  tient pas compte de l'heure réelle ni du temps d'attente). L'arrêt utilisé et le
-  détail bus/vélo sont ajoutés en **commentaire** sur la cellule de résultat. Ce mode
-  fait jusqu'à ~12 appels API par ligne (un par arrêt testé), donc plus lent et plus
-  gourmand en quota que les autres modes.
-
-## 🗂️ Structure
-
-| Fichier | Rôle |
-|---|---|
-| `Code.gs` | Tout le script (serveur Apps Script + interface HTML de la fenêtre). |
-
-## ⚙️ Détails techniques
-
-- **Arrière-plan** : `demarrerCalculFond` prépare un « job » (stocké dans les
-  *Document Properties*) ; `executerLotFond`, lancé par déclencheur temporel et/ou
-  depuis la fenêtre, traite les lignes par tranches de ~5 min et se re-planifie tant
-  qu'il reste du travail. Un `LockService` garantit qu'un seul lot tourne à la fois.
-- **Progression** : la fenêtre interroge `getEtatProgression` toutes les 1,5 s.
-- **Directions API** : appelée via `UrlFetchApp` ; le mode (`driving` / `walking` / `bicycling` /
-  `transit` + `transit_mode=train|bus`) est passé en paramètre.
+- **Suivi auto** :
+  - `traiterEdition` est le handler du **déclencheur installable on edit**.
+  - `traiter_` lit la ligne éditée, applique les transitions de statut et
+    écrit dans le suivi (création via `appendRow` ou mise à jour via `setValue`).
+  - `migrerVersUuid` / `nettoyerDoublons` pour les migrations et doublons.
+- **Calculateur** :
+  - `demarrerCalculFond` prépare un « job » (stocké dans les *Document Properties*)
+    ; `executerLotFond`, lancé par déclencheur temporel et/ou depuis la fenêtre,
+    traite les lignes par tranches de ~5 min et se re-planifie tant qu'il reste du
+    travail. Un `LockService` garantit qu'un seul lot tourne à la fois.
+  - **Progression** : la fenêtre interroge `getEtatProgression` toutes les 1,5 s.
